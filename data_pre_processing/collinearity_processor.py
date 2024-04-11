@@ -5,9 +5,10 @@ class CollinearityProcessor:
     The remaining feature is the one that has the highest correlation with the target.
     The threshold parameter determines the minimum correlation between two features to be considered collinear.
     """
-    def __init__(self, threshold=0.85):
+    def __init__(self, target_name, threshold=0.85, ):
         self.correlation_matrix = None
         self.threshold = threshold
+        self.target_name = target_name
 
     def fit(self, X):
         self.correlation_matrix = X.corr()

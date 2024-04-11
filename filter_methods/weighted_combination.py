@@ -1,8 +1,6 @@
 import pandas as pd
 from sklearn.feature_selection import mutual_info_classif
-
-from util_functions import kl_divergence
-
+from sklearn.linear_model import LinearRegression, LogisticRegression
 
 class WeightedCombination:
     """
@@ -40,4 +38,19 @@ class WeightedCombination:
         if num_features > 0:
             feature_scores = feature_scores.head(num_features)
         return feature_scores
+
+    def auto_optimize(self, X_train, X_test, y_train, y_test, model:LinearRegression, num_features=0):
+        """
+        Optimizes the weights for the correlation and information gain, by maximizing the model's performance.
+        Optimal weights are found using a binary search.
+        :param X:
+        :param y:
+        :param model:
+        :return: a dataframe with the selected features
+        """
+        best_score = 0
+        model_copy = model
+        self.correlation_weight = 1
+        self.information_gain_weight = 0
+
 
