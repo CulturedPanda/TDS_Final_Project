@@ -24,5 +24,5 @@ X, continuous_cols, cat_cols = preprocessor.preprocess()
 
 filter_method = WeightedCombination()
 filter_method.fit(X, target_column="SalePrice", continuous_cols=continuous_cols, categorical_cols=cat_cols)
-selected_features = filter_method.transform(X, num_features=5)
+X_transformed, selected_features, feature_scores = filter_method.transform(X, num_features=5)
 print(selected_features)

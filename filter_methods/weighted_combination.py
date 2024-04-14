@@ -59,21 +59,21 @@ class WeightedCombination:
         :param X:
         :param num_features:
         :param min_score:
-        :return: a dataframe with the selected features
+        :return: The dataframe with only the selected features, the list of selected features and the feature scores
         """
         if num_features == 0 and min_score == 0:
             raise ValueError("Either num_features or min_score must be set")
+        # Compute the feature scores series
         feature_scores = self.correlation_weight * self.correlation.values + \
                          (1 - self.correlation_weight) * self.mutual_information
-        feature_scores = pd.DataFrame(feature_scores, index=X.columns, columns=X.columns)
-        feature_scores = feature_scores.stack().reset_index()
-        feature_scores.columns = ['Feature1', 'Feature2', 'Score']
-        feature_scores = feature_scores[feature_scores['Feature1'] != feature_scores['Feature2']]
-        feature_scores = feature_scores[feature_scores['Score'] >= min_score]
-        feature_scores = feature_scores.sort_values('Score', ascending=False)
+        # Sort the features by their scores
+        feature_scores = feature_scores.sort_values(ascending=False)
+        possible_features = feature_scores[feature_scores >= min_score]
         if num_features > 0:
-            feature_scores = feature_scores.head(num_features)
-        return feature_scores
+            feature_list = possible_features.head(num_features).index
+        else:
+            feature_list = possible_features.index
+        return X[feature_list], feature_list, feature_scores
 
     def auto_optimize(self, X_train, X_test, y_train, y_test, model: LinearRegression, num_features=0):
         """
