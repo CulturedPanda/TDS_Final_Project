@@ -2,7 +2,6 @@ import numpy as np
 import pandas as pd
 import sklearn.linear_model
 from sklearn.feature_selection import mutual_info_regression, mutual_info_classif
-from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.metrics import mean_squared_error
 
 
@@ -10,19 +9,28 @@ class WeightedCombination:
     """
     This class implements a filter method, grading the features
     based on a weighted combination of correlation and information gain.
+    Also provides a method to optimize the weights for the correlation and information gain as well as the number of
+    features to select.
     """
 
     def __init__(self, correlation_weight=0.5, target_column=None):
         self.mutual_information = None
         self.correlation = None
         self.correlation_weight = correlation_weight
-        self.target_column = None
-
+        self.target_column = target_column
 
     def set_weight(self, correlation_weight):
         self.correlation_weight = correlation_weight
 
     def fit(self, X, target_column=None, continuous_cols=None, categorical_cols=None):
+        """
+        Fits the filter method to the data.
+        :param X:
+        :param target_column:
+        :param continuous_cols: A list of the names of the continuous columns in the data
+        :param categorical_cols: A list of the names of the categorical columns in the data
+        :return:
+        """
         if target_column is None and self.target_column is None:
             raise ValueError("Target column must be set")
         if target_column is not None:
@@ -149,6 +157,7 @@ class WeightedCombination:
                 for num in num_features:
                     loss = self.test_on_values(X_train, y_train, X_test, y_test, model, num, weight, loss_function)
                     print(f"Weight: {weight}, Num features: {num}, Loss: {loss}")
+                    # Update the best loss, weight and number of features if the current loss is better
                     if loss < best_loss:
                         best_loss = loss
                         best_weight = weight
@@ -162,7 +171,9 @@ class WeightedCombination:
                         if loss == np.inf:
                             print("No features selected, skipping")
                             break
-                        print(f"Weight: {weight}, Num features: {num}, Score threshold: {threshold_weight}, Loss: {loss}")
+                        print(
+                            f"Weight: {weight}, Num features: {num}, Score threshold: {threshold_weight}, Loss: {loss}")
+                        # Update the best loss, weight, number of features and threshold if the current loss is better
                         if loss < best_loss:
                             best_loss = loss
                             best_weight = weight

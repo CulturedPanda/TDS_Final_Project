@@ -19,10 +19,10 @@ target = 'SalePrice'
 cols = ["OverallQual","GrLivArea","GarageCars","GarageArea","TotalBsmtSF","FullBath","YearBuilt","YearRemodAdd",
         "LotFrontage","MSSubClass", "SalePrice"]
 data = data[cols]
-# Select only the first 10 rows
 
+# Preprocess the data to encode categorical variables, impute missing values and remove collinear features
 preprocessor = PreprocessingPipeline(data,
-                                     ['MSSubClass', 'FullBath'], 0.9)
+                                     ['MSSubClass', 'FullBath'], 0.85)
 X, continuous_cols, cat_cols = preprocessor.preprocess()
 
 X_train, X_test, y_train, y_test = train_test_split(X, X['SalePrice'], test_size=0.2, random_state=42)
@@ -34,7 +34,8 @@ filter_method.fit(X_train, target_column="SalePrice", continuous_cols=continuous
 #                                   y_train, X_test,
 #                                   y_test,
 #                                   loss_function=mean_squared_error)
-filter_method.set_weight(0.3)
+# Use the best weight found during optimization
+filter_method.set_weight(0.29)
 X_transformed, selected_features, _ = filter_method.transform(X_train, num_features=13)
 print(selected_features)
 
