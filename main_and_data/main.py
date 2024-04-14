@@ -16,11 +16,13 @@ target = 'SalePrice'
 cols = ["OverallQual","GrLivArea","GarageCars","GarageArea","TotalBsmtSF","FullBath","YearBuilt","YearRemodAdd",
         "LotFrontage","MSSubClass", "SalePrice"]
 data = data[cols]
+# Select only the first 10 rows
+data = data.head(10)
 
 preprocessor = PreprocessingPipeline(data, ['MSSubClass'], 0.9)
-X = preprocessor.preprocess()
+X, continuous_cols, cat_cols = preprocessor.preprocess()
 
 filter_method = WeightedCombination()
-filter_method.fit(X, y)
+filter_method.fit(X, target_column="SalePrice", continuous_cols=continuous_cols, categorical_cols=cat_cols)
 selected_features = filter_method.transform(X, num_features=5)
 print(selected_features)
