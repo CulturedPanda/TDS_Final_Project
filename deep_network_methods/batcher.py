@@ -7,12 +7,13 @@ class Batcher:
     Cycle through the data and return a batch of data, always returning the same batch size.
     """
 
-    def __init__(self, X, y, batch_size):
+    def __init__(self, X, batch_size, dtype=None):
         self.X = X
-        self.y = y
         self.index = 0
         self.prev_index = 0
         self.batch_size = batch_size
+        if dtype is not None:
+            self.X = self.X.astype(dtype)
 
     def next_batch(self):
         """
@@ -25,15 +26,13 @@ class Batcher:
         else:
             batch_len = self.batch_size
         batch_X = self.X[self.index:self.index + batch_len]
-        batch_y = self.y[self.index:self.index + batch_len]
         # Append the beginning of the data to the batch if necessary
         if batch_len < self.batch_size:
             batch_X = pd.concat([batch_X, self.X[:self.batch_size - batch_len]])
-            batch_y = pd.concat([batch_y, self.y[:self.batch_size - batch_len]])
         # Update the index, ensuring that it wraps around when necessary
         self.prev_index = self.index
         self.index = (self.index + self.batch_size) % len(self.X)
-        return batch_X, batch_y
+        return batch_X.to_numpy().reshape(-1, )
 
     def __iter__(self):
         return self
