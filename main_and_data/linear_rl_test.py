@@ -34,6 +34,7 @@ batch_size = 256
 
 model = LinearAgent(X_train, y_train, LinearRegression(), mean_squared_error, batch_size=batch_size, agent_type='A2C',
                     save_path=os.path.join(script_dir, 'models', 'linear_agent'), eval_freq=500)
+print(model.agent.policy)
 model.learn(num_steps=1000)
 model.save(model_name="end_of_training")
 # model = LinearAgent.load(os.path.join(script_dir, 'models', 'linear_agent', "best_model.zip"))

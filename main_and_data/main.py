@@ -34,12 +34,14 @@ X_prod = X_prod.drop(columns=['SalePrice'])
 batch_size = 256
 
 model = SequentialAgent(
-    X_train, y_train, 'YearBuilt', LinearRegression(), mean_squared_error, agent_type='PPO'
+    X_train, y_train, 'YearBuilt', LinearRegression(), mean_squared_error, agent_type='A2C'
 )
 print(model.agent.policy)
-model.learn(num_steps=100)
+model.learn(num_steps=1000)
 predictions = model.predict(X_train)
 print(predictions)
+models, loss_values, predictions = model.train_models_for_ranges(X_train, y_train, LinearRegression(), mean_squared_error)
+print(loss_values)
 
 # X_train_all = X_train.sample(batch_size).to_numpy().astype(np.float32)
 # action, _states = model.predict(X_train_all.reshape(-1, ))

@@ -126,8 +126,6 @@ class Sequencer:
         self.index += 1
         self.index = self.index % len(self.sequences)
         current_sequence = self.sequences[self.index]
-        current_sequence_t = current_sequence.to_numpy()
-        current_sequence_t = current_sequence_t.reshape(-1, )
         return current_sequence.to_numpy().reshape(-1,)
 
     def __len__(self):

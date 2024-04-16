@@ -13,10 +13,10 @@ from stable_baselines3.common.callbacks import EvalCallback
 class SequentialAgent:
 
     def __init__(self, X_train, y_train, col: str, downstream_model, loss_function: callable,
-                 agent_type: str = 'recurrent_ppo', network_type='recurrent',
+                 agent_type: str = 'A2C', network_type='recurrent',
                  network_architecture_class: BaseFeaturesExtractor | str = None,
                  environment: SequentialModelDatasetEnv = None, network_kwargs: dict = None,
-                 save_path: str = None, eval_freq: int = 500):
+                 save_path: str = None, eval_freq: int = 250):
         """
         Initialize the agent
         :param X_train: The training data
@@ -50,7 +50,7 @@ class SequentialAgent:
             if network_type == 'fully_connected':
                 self.network_architecture_class = DefaultFullyConnectedNetwork
                 network_kwargs = dict(
-                    input_size=X_train.shape[1] * self.environment.observation_space.shape[0],
+                    input_size=self.environment.observation_space.shape[0],
                     features_dim=X_train.shape[1],
                 )
             elif network_type == 'recurrent':
@@ -74,15 +74,11 @@ class SequentialAgent:
             self.agent = A2C("MlpPolicy", self.environment, policy_kwargs=policy_kwargs, verbose=1)
         elif agent_type == 'PPO':
             self.agent = PPO("MlpPolicy", self.environment, policy_kwargs=policy_kwargs, verbose=1)
-        elif agent_type == 'recurrent_ppo':
-            # self.agent = RecurrentPPO("MlpLstmPolicy", self.environment, policy_kwargs=policy_kwargs, verbose=1)
-            self.agent = RecurrentPPO("MlpLstmPolicy", self.environment, verbose=1)
         else:
             raise ValueError("Invalid agent type")
 
     def learn(self, num_steps: int = 4000):
         self.agent.learn(num_steps, callback=self.eval_callback)
-
     def save(self, path: str):
         self.agent.save(path)
 
@@ -93,7 +89,7 @@ class SequentialAgent:
         sequences = sequencer.pad_sequences(sequencer.get_max_sequence_length(), sequences)
         predictions = []
         for sequence in sequences:
-            prediction = self.agent.predict(sequence, deterministic=deterministic)[0]
+            prediction = self.agent.predict(sequence, deterministic=deterministic)
             predictions.append(prediction)
         if return_sequences:
             return predictions, sequences, targets
@@ -125,7 +121,7 @@ class SequentialAgent:
             loss = loss_function(y, y_pred)
             loss_values.append(loss)
             models.append(model_i)
-        return models
+        return models, loss_values, predictions
 
     @staticmethod
     def load(path: str, agent_type: str = 'recurrent_ppo'):
@@ -133,7 +129,5 @@ class SequentialAgent:
             return A2C.load(path)
         elif agent_type == 'PPO':
             return PPO.load(path)
-        elif agent_type == 'recurrent_ppo':
-            return RecurrentPPO.load(path)
         else:
             raise ValueError("Invalid agent type")
