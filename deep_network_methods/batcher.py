@@ -19,6 +19,8 @@ class Batcher:
         """
         :return: The next batch of data
         """
+        self.prev_index = self.index
+        self.index = (self.index + self.batch_size) % len(self.X)
         # Account for cases where the batch size does not divide the number of samples
         # In this case, we loop back to the beginning of the data and append those samples to the batch
         if self.index + self.batch_size > len(self.X):
@@ -30,8 +32,6 @@ class Batcher:
         if batch_len < self.batch_size:
             batch_X = pd.concat([batch_X, self.X[:self.batch_size - batch_len]])
         # Update the index, ensuring that it wraps around when necessary
-        self.prev_index = self.index
-        self.index = (self.index + self.batch_size) % len(self.X)
         return batch_X.to_numpy().reshape(-1, )
 
     def __iter__(self):

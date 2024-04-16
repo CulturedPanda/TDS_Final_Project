@@ -7,9 +7,9 @@ from .sequencer import Sequencer
 
 class SequentialModelDatasetEnv(gym.Env):
 
-    def __init__(self, X_train, y_train, cols, downstream_model, loss_function: callable):
+    def __init__(self, X_train, y_train, col, downstream_model, loss_function: callable):
         # Initialize the sequencer
-        self.sequencer = Sequencer(X_train, y_train, cols)
+        self.sequencer = Sequencer(X_train, y_train, col)
         self.sequencer.normalize()
         self.action_space = MultiBinary(len(X_train.columns))
         # Pad the sequences to the same length
@@ -20,6 +20,8 @@ class SequentialModelDatasetEnv(gym.Env):
         self.downstream_model = downstream_model
         self.loss_function = loss_function
 
+    def get_sequencer(self):
+        return self.sequencer
 
     def step(self, action):
         # Pick the features that are selected by the action

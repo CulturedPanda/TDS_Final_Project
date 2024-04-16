@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import os
 
-from deep_network_methods import SequentialModelDatasetEnv
+from deep_network_methods import SequentialAgent
 from data_pre_processing import PreprocessingPipeline
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_squared_error, r2_score, mean_absolute_error, mean_absolute_percentage_error
@@ -33,8 +33,13 @@ X_prod = X_prod.drop(columns=['SalePrice'])
 
 batch_size = 256
 
-env = SequentialModelDatasetEnv(X_train, y_train, ["YearBuilt"], LinearRegression(), mean_squared_error)
-check_env(env)
+model = SequentialAgent(
+    X_train, y_train, 'YearBuilt', LinearRegression(), mean_squared_error, agent_type='PPO'
+)
+print(model.agent.policy)
+model.learn(num_steps=100)
+predictions = model.predict(X_train)
+print(predictions)
 
 # X_train_all = X_train.sample(batch_size).to_numpy().astype(np.float32)
 # action, _states = model.predict(X_train_all.reshape(-1, ))
