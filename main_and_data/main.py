@@ -2,14 +2,11 @@ import numpy as np
 import pandas as pd
 import os
 
-from deep_network_methods import DatasetEnv
+from deep_network_methods import LinearAgent
 from data_pre_processing import PreprocessingPipeline
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_squared_error, r2_score, mean_absolute_error, mean_absolute_percentage_error
 from sklearn.linear_model import LinearRegression
-from stable_baselines3 import A2C
-from stable_baselines3.common.env_checker import check_env
-from stable_baselines3.common.evaluation import evaluate_policy
 
 # Get the directory of the currently running script
 script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -33,16 +30,16 @@ X_train, X_prod, y_train, y_prod = train_test_split(X, X['SalePrice'], test_size
 X_train = X_train.drop(columns=['SalePrice'])
 X_prod = X_prod.drop(columns=['SalePrice'])
 
-environment = DatasetEnv(X_train, y_train, X_prod, y_prod, LinearRegression(), mean_squared_error, batch_size=64)
-check_env(environment)
-model = A2C("MlpPolicy", environment, verbose=1).learn(4000)
-mean_reward, std_reward = evaluate_policy(model, environment, n_eval_episodes=10)
-print(f"Mean reward: {mean_reward} +/- {std_reward}")
+batch_size = X_train.shape[0]
 
-X_prod_64 = X_prod.sample(64)
-y_prod_64 = y_prod.loc[X_prod_64.index]
-X_prod_64 = X_prod_64.to_numpy().astype(np.dtype('float32')).reshape(-1, )
-action, _states = model.predict(X_prod_64, deterministic=True)
+model = LinearAgent(X_train, y_train, LinearRegression(), mean_squared_error, batch_size=batch_size, agent_type='A2C',
+                    save_path=os.path.join(script_dir, 'models', 'linear_agent'), eval_freq=500)
+model.learn(num_steps=500)
+model.save(model_name="end_of_training")
+# model = LinearAgent.load(os.path.join(script_dir, 'models', 'linear_agent', "best_model.zip"))
+
+X_train_all = X_train.sample(batch_size).to_numpy().astype(np.float32)
+action, _states = model.predict(X_train_all.reshape(-1, ))
 X = X_prod[X_prod.columns[action == 1]]
 selected_features = X.columns
 print(f"Selected features: {selected_features}")
