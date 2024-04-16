@@ -1,7 +1,7 @@
 import numpy as np
 import os
 
-from .dataset_env import DatasetEnv
+from .linear_model_dataset_env import LinearModelDatasetEnv
 from .default_fully_connected_network import DefaultFullyConnectedNetwork
 from stable_baselines3 import A2C, PPO
 from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
@@ -37,7 +37,7 @@ class LinearAgent():
         """
         X_train, y_train = self.preprocess_training_data(X_train, y_train)
         if environment is None:
-            self.environment = DatasetEnv(X_train, y_train, downstream_model, loss_function, batch_size)
+            self.environment = LinearModelDatasetEnv(X_train, y_train, downstream_model, loss_function, batch_size)
         else:
             self.environment = environment
         self.agent_type = agent_type

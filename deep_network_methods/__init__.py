@@ -1,2 +1,3 @@
-from .dataset_env import DatasetEnv
+from .linear_model_dataset_env import LinearModelDatasetEnv
 from .linear_agent import LinearAgent
+from .sequential_model_dataset_env import SequentialModelDatasetEnv

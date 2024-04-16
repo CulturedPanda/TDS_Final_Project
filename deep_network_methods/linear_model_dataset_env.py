@@ -5,7 +5,7 @@ import numpy as np
 from .batcher import Batcher
 
 
-class DatasetEnv(gym.Env):
+class LinearModelDatasetEnv(gym.Env):
 
     def __init__(self, X_train, y_train, downstream_model, loss_function: callable,
                  batch_size: int = 64):
