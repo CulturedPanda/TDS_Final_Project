@@ -35,7 +35,7 @@ batch_size = 256
 
 model = SequentialAgent(
     X_train, y_train, 'YearBuilt', LinearRegression(), mean_squared_error, agent_type='A2C',
-    lstm_hidden_layer_size=64, lstm_num_layers=2, network_type='recurrent',
+    lstm_hidden_layer_size=32, lstm_num_layers=3, network_type='recurrent',
     save_path=os.path.join(script_dir, 'models', 'sequential_model')
 )
 print(model.agent.policy)
@@ -51,11 +51,21 @@ models, metric_values, predictions, train_sequences, train_targets, test_sequenc
         mean_absolute_percentage_error,
         max_error
     ])
+print("Selected features length and columns:")
+print([len(prediction) for prediction in predictions])
+print([sequence.columns for sequence in train_sequences])
+print("\n")
 print(metric_values)
 average_metrics = {metric: np.mean([model_metrics[metric] for model_metrics in metric_values]) for metric in
                    metric_values[0].keys()}
+max_metrics = {metric: np.max([model_metrics[metric] for model_metrics in metric_values]) for metric in
+                metric_values[0].keys()}
+min_metrics = {metric: np.min([model_metrics[metric] for model_metrics in metric_values]) for metric in
+                metric_values[0].keys()}
 print("With feature selection, with sequencing:")
-print(average_metrics)
+print(f"Average: {average_metrics}")
+print(f"Max: {max_metrics}")
+print(f"Min: {min_metrics}")
 print("\n")
 
 all_feature_metrics = []
@@ -86,7 +96,13 @@ for i in range(len(train_sequences)):
 
 average_metrics = {metric: np.mean([model_metrics[metric] for model_metrics in all_feature_metrics]) for metric in
                    all_feature_metrics[0].keys()}
-print(average_metrics)
+max_metrics = {metric: np.max([model_metrics[metric] for model_metrics in all_feature_metrics]) for metric in
+                all_feature_metrics[0].keys()}
+min_metrics = {metric: np.min([model_metrics[metric] for model_metrics in all_feature_metrics]) for metric in
+                all_feature_metrics[0].keys()}
+print(f"Average: {average_metrics}")
+print(f"Max: {max_metrics}")
+print(f"Min: {min_metrics}")
 print("\n")
 
 print("Baseline model - no feature selection, no sequencing:")
