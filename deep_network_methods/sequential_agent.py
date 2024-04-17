@@ -1,6 +1,8 @@
 import numpy as np
 import os
 
+import pandas as pd
+
 from .sequential_model_dataset_env import SequentialModelDatasetEnv
 from .default_fully_connected_network import DefaultFullyConnectedNetwork
 from .default_sequence_modeling_network import DefaultSequenceModelingNetwork
@@ -16,7 +18,8 @@ class SequentialAgent:
                  agent_type: str = 'A2C', network_type='recurrent',
                  network_architecture_class: BaseFeaturesExtractor | str = None,
                  environment: SequentialModelDatasetEnv = None, network_kwargs: dict = None,
-                 save_path: str = None, eval_freq: int = 250):
+                 save_path: str = None, eval_freq: int = 250, lstm_hidden_layer_size: int = 128,
+                 lstm_num_layers: int = 3):
         """
         Initialize the agent
         :param X_train: The training data
@@ -26,7 +29,7 @@ class SequentialAgent:
         :param loss_function: The loss function to use for the downstream model
         :param agent_type: The type of agent to use. Can be 'A2C' or 'PPO' for fully connected networks,
          or 'recurrent_ppo' for recurrent networks
-        :param network_type: The type of network to use. Can be 'fully_connected' or 'recurrent'
+        :param network_type: The type of network to use. Can be 'linear' or 'recurrent'
         :param network_architecture_class: The class of the network architecture to use. If None, a default network
         architecture of the type specified by network_type is used. If 'auto', the network architecture is determined
         automatically by the Stable Baselines3 library's defaults.
@@ -37,17 +40,21 @@ class SequentialAgent:
         :param save_path: The path to save the best model to.
         :param eval_freq: The frequency at which to evaluate the model.
         """
+        self.flatten = (agent_type != 'RecurrentPPO')
+        self.feature_space_dim = len(X_train.columns)
+        self.data_columns = X_train.columns
         if environment is None:
             self.environment = SequentialModelDatasetEnv(X_train=X_train,
                                                          y_train=y_train,
                                                          col=col,
                                                          downstream_model=downstream_model,
-                                                         loss_function=loss_function)
+                                                         loss_function=loss_function,
+                                                         flatten=self.flatten)
         else:
             self.environment = environment
         self.agent_type = agent_type
         if network_architecture_class is None:
-            if network_type == 'fully_connected':
+            if network_type == 'linear':
                 self.network_architecture_class = DefaultFullyConnectedNetwork
                 network_kwargs = dict(
                     input_size=self.environment.observation_space.shape[0],
@@ -57,6 +64,8 @@ class SequentialAgent:
                 self.network_architecture_class = DefaultSequenceModelingNetwork
                 network_kwargs = dict(
                     features_dim=X_train.shape[1],
+                    hidden_size=lstm_hidden_layer_size,
+                    num_layers=lstm_num_layers
                 )
         else:
             self.network_architecture_class = network_architecture_class
@@ -74,6 +83,10 @@ class SequentialAgent:
             self.agent = A2C("MlpPolicy", self.environment, policy_kwargs=policy_kwargs, verbose=1)
         elif agent_type == 'PPO':
             self.agent = PPO("MlpPolicy", self.environment, policy_kwargs=policy_kwargs, verbose=1)
+        # Recurrent PPO agent only works with default arguments, because I can not, for the life of me,
+        # get it to work with custom arguments
+        elif agent_type == 'RecurrentPPO':
+            self.agent = RecurrentPPO("MlpLstmPolicy", self.environment, verbose=1)
         else:
             raise ValueError("Invalid agent type")
 
@@ -82,46 +95,58 @@ class SequentialAgent:
     def save(self, path: str):
         self.agent.save(path)
 
-    def predict(self, X, deterministic: bool = True, y=None, return_sequences=False):
+    def predict(self, X, deterministic: bool = True):
         sequencer = self.environment.get_sequencer()
-        sequences, targets = sequencer.sequence_by_ranges(X, y)
+        sequences, targets = sequencer.sequence_by_ranges(X)
         sequences = sequencer.normalize(sequences)
         sequences = sequencer.pad_sequences(sequencer.get_max_sequence_length(), sequences)
+        if self.flatten:
+            sequences = [sequence.to_numpy().reshape(-1, ) for sequence in sequences]
+        # Cast to float32, just in case
+        sequences = [sequence.astype(np.float32) for sequence in sequences]
         predictions = []
         for sequence in sequences:
-            prediction = self.agent.predict(sequence, deterministic=deterministic)
+            prediction = self.agent.predict(sequence, deterministic=deterministic)[0]
             predictions.append(prediction)
-        if return_sequences:
-            return predictions, sequences, targets
         return predictions
 
     def get_sequencer(self):
         return self.environment.get_sequencer()
 
-    def train_models_for_ranges(self, X, y, model, loss_function: callable):
+    def train_models_for_ranges(self, X_train, y_train, X_test, y_test,
+                                model, metrics: list[callable]):
         """
         Train a model for each sequence in the provided data
         :param X:
         :param y:
         :param model:
         :param loss_function:
-        :return:
+        :return: A list of models, a list of dicts for the metrics measured for each model,
+        a list containing the predictions for each sequence, a list of the test sequences and a list of the test targets
         """
-        predictions, sequences, targets = self.predict(X, y=y, return_sequences=True)
+        predictions = self.predict(X_train)
+        sequencer = self.environment.get_sequencer()
+        sequences, targets = sequencer.sequence_by_ranges(X_train, y_train)
+        test_sequences, test_targets = sequencer.sequence_by_ranges(X_test, y_test)
         models = []
-        loss_values = []
+        models_metrics = []
+        adjusted_train_sequences = []
         for i in range(len(predictions)):
             model_i = model.__class__()
             X = sequences[i]
             y = targets[i]
             X = X.loc[~(X == 0).all(axis=1)]
             X = X[X.columns[predictions[i] == 1]]
+            adjusted_train_sequences.append(X)
             model_i.fit(X, y)
-            y_pred = model_i.predict(X)
-            loss = loss_function(y, y_pred)
-            loss_values.append(loss)
+            X_test = test_sequences[i]
+            y_test = test_targets[i]
+            X_test = X_test[X.columns]
+            y_pred = model_i.predict(X_test)
+            model_metrics = {metric.__name__: metric(y_test, y_pred) for metric in metrics}
+            models_metrics.append(model_metrics)
             models.append(model_i)
-        return models, loss_values, predictions
+        return models, models_metrics, predictions, adjusted_train_sequences, targets, test_sequences, test_targets
 
     @staticmethod
     def load(path: str, agent_type: str = 'recurrent_ppo'):
@@ -129,5 +154,7 @@ class SequentialAgent:
             return A2C.load(path)
         elif agent_type == 'PPO':
             return PPO.load(path)
+        elif agent_type == 'RecurrentPPO':
+            return RecurrentPPO.load(path)
         else:
             raise ValueError("Invalid agent type")

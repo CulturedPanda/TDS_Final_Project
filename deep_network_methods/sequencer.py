@@ -13,7 +13,7 @@ class Sequencer:
     different features may be important in each sequence.
     """
 
-    def __init__(self, data: pd.DataFrame, targets: pd.Series, col: str,
+    def __init__(self, data: pd.DataFrame, targets: pd.Series, col: str, flatten: bool,
                  sequencing_method: str = 'MeanShift', as_type: np.dtype = np.float32):
         data = data.astype(as_type)
         self.max_index = max(data.index * 10)
@@ -27,6 +27,7 @@ class Sequencer:
         self.ranges = [(sequence[self.col].min(), sequence[self.col].max()) for sequence in self.sequences]
         # Sort the ranges by the start of the range, so that they are in order
         self.ranges.sort(key=lambda x: x[0])
+        self.flatten = flatten
 
     def sequence_data(self, data: pd.DataFrame, targets: pd.Series) -> (List[pd.DataFrame], List[pd.Series]):
         """
@@ -110,8 +111,6 @@ class Sequencer:
                     # Delete the original sequence and append the segments to the list of sequences
                     del sequences[i]
                     sequences.extend(segments)
-            for j in range(len(sequences)):
-                sequences[j] = sequences[j].to_numpy().reshape(-1, )
             return sequences
 
     def __iter__(self):
@@ -126,7 +125,9 @@ class Sequencer:
         self.index += 1
         self.index = self.index % len(self.sequences)
         current_sequence = self.sequences[self.index]
-        return current_sequence.to_numpy().reshape(-1,)
+        if self.flatten:
+            return current_sequence.to_numpy().reshape(-1,)
+        return current_sequence.to_numpy()
 
     def __len__(self):
         return len(self.sequences)
@@ -155,7 +156,9 @@ class Sequencer:
         """
         self.index = 0
         self.previous_index = 0
-        return self.sequences[self.index].to_numpy().reshape(-1,)
+        if self.flatten:
+            return self.sequences[self.index].to_numpy().reshape(-1,)
+        return self.sequences[self.index].to_numpy()
 
     def is_done(self):
         """

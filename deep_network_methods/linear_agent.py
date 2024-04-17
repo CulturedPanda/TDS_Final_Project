@@ -97,7 +97,7 @@ class LinearAgent():
 
     def predict(self, X, deterministic: bool = True):
         X = self.preprocess_input_data(X)
-        return self.agent.predict(X, deterministic=deterministic)
+        return self.agent.predict(X, deterministic=deterministic)[0]
 
     def save(self, model_name: str = None):
         save_path = os.path.join(self.save_path, model_name)
