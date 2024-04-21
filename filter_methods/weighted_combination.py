@@ -25,16 +25,17 @@ class WeightedCombination:
     def fit(self, X, target_column=None, continuous_cols=None, categorical_cols=None):
         """
         Fits the filter method to the data.
-        :param X:
-        :param target_column:
-        :param continuous_cols: A list of the names of the continuous columns in the data
-        :param categorical_cols: A list of the names of the categorical columns in the data
-        :return:
+        :param X: The data to fit the filter method to.
+        :param target_column: The name of the target column.
+        :param continuous_cols: A list of the names of the continuous columns in the data.
+        :param categorical_cols: A list of the names of the categorical columns in the data.
+        :return: None
         """
         if target_column is None and self.target_column is None:
             raise ValueError("Target column must be set")
         if target_column is not None:
             self.target_column = target_column
+
         # Compute the correlation between the features and the target
         # We use the absolute value of the correlation, as we are interested in the strength of the relationship,
         # regardless of the direction
@@ -53,16 +54,20 @@ class WeightedCombination:
         # If both list were provided or at-least 1 was inferred, we will calculate the information gain
         # appropriately for the continuous and categorical columns
         if continuous_cols is not None and categorical_cols is not None:
+
             # Fix the column list to not include the target column
             continuous_cols = [col for col in continuous_cols if col in data.columns]
             categorical_cols = [col for col in categorical_cols if col in data.columns]
+
             # Split the data into continuous and categorical
             data_continuous = data[continuous_cols]
             data_categorical = data[categorical_cols]
+
             # Compute the mutual information for both types of features
             cont_mi = dict(zip(continuous_cols, mutual_info_regression(data_continuous, y)))
             cat_mi = dict(zip(categorical_cols, mutual_info_classif(data_categorical, y, discrete_features=True)))
             self.mutual_information = pd.Series({**cont_mi, **cat_mi})
+
         # Otherwise, we calculate the information gain as if all features are continuous
         else:
             mutual_information = dict(zip(data.columns, mutual_info_regression(data, y)))
@@ -70,19 +75,28 @@ class WeightedCombination:
 
     def transform(self, X, num_features=0, min_threshold=0):
         """
-        :param X:
-        :param num_features:
-        :param min_threshold:
-        :return: The dataframe with only the selected features, the list of selected features and the feature scores
+        Transforms the data to only include the selected features.
+        Either the number of features or the minimum threshold must be set.
+        :param X: The data to transform.
+        :param num_features: The number of features to select. Default is 0, which means all features with a score above
+        the threshold will be selected.
+        :param min_threshold: The minimum score a feature must have to be selected. Default is 0, which means all
+        features with a score above the threshold will be selected.
+        :return: The dataframe with only the selected features, the list of selected features and the feature scores.
         """
         if num_features == 0 and min_threshold == 0:
             raise ValueError("Either num_features or min_threshold must be set")
+
         # Compute the feature scores series
         feature_scores = self.correlation_weight * self.correlation.values + \
                          (1 - self.correlation_weight) * self.mutual_information
+
         # Sort the features by their scores
         feature_scores = feature_scores.sort_values(ascending=False)
+
+        # Get the features with a score above the threshold
         possible_features = feature_scores[feature_scores >= min_threshold]
+
         if num_features > 0:
             try:
                 feature_list = possible_features.head(num_features).index
@@ -94,29 +108,37 @@ class WeightedCombination:
             feature_list = possible_features.index
         return X[feature_list], feature_list, feature_scores
 
-    def test_on_values(self, X_train, y_train, X_test, y_test,
-                       model, num_features, parameter_value, loss_function, threshold=0):
+    def _test_on_values(self, X_train, y_train, X_test, y_test,
+                        model, num_features, parameter_value, loss_function, threshold=0):
         """
         Tests the performance of the model on the selected features.
-        :param X_train:
-        :param y_train:
-        :param X_test:
-        :param y_test:
-        :param model:
+        :param X_train: The training data.
+        :param y_train: The training target.
+        :param X_test: The test data.
+        :param y_test: The test target.
+        :param model: The model to be used for the optimization.
         :return: the model's performance
         """
+
         # Copy the uninitialized model
         model = model.__class__()
+
         # Set the correlation weight to the parameter value
         self.correlation_weight = parameter_value
+
         # Get the selected features
         X_train, selected_features, _ = self.transform(X_train, num_features=num_features, min_threshold=threshold)
+
+        # If no features were selected, return infinity as the loss
         if len(selected_features) == 0:
             return np.inf
+
         X_test = X_test[selected_features]
+
         # Fit the model and get the predictions
         model.fit(X_train, y_train)
         preds = model.predict(X_test)
+
         # Return the model's performance
         return loss_function(y_test, preds)
 
@@ -142,46 +164,64 @@ class WeightedCombination:
         :return: a dataframe with the selected features, the list of selected features and the feature scores,
         the best weight, the best loss, the best number of features and the best threshold found
         """
+
         # Initialize the best loss and weight
         best_loss = np.inf
         best_weight = None
         best_num_features = None
         best_threshold = 0
+        history = {
+            "weight": [],
+            "num_features": [],
+            "loss": []
+        }
+
         # Initialize the grid search parameters
         correlation_weights = np.linspace(0, 1, 101)
         num_features = np.arange(1, len(X_train.columns) + 1)
         threshold_weights = np.linspace(0, 1, 101)
-        # Iterate over the grid search parameters
+
+        # Iterate over the grid search parameters.
+        # If include_threshold_optimization is False, we will skip the threshold optimization
         if not include_threshold_optimization:
             for weight in correlation_weights:
                 for num in num_features:
-                    loss = self.test_on_values(X_train, y_train, X_test, y_test, model, num, weight, loss_function)
+                    loss = self._test_on_values(X_train, y_train, X_test, y_test, model, num, weight, loss_function)
                     print(f"Weight: {weight}, Num features: {num}, Loss: {loss}")
+
                     # Update the best loss, weight and number of features if the current loss is better
                     if loss < best_loss:
                         best_loss = loss
                         best_weight = weight
                         best_num_features = num
+                    history["weight"].append(weight)
+                    history["num_features"].append(num)
+                    history["loss"].append(loss)
+        # If include_threshold_optimization is True, we will include the threshold optimization
         else:
             for weight in correlation_weights:
                 for num in num_features:
                     for threshold_weight in threshold_weights:
-                        loss = self.test_on_values(X_train, y_train, X_test, y_test, model, num, weight, loss_function,
-                                                   threshold=threshold_weight)
+                        loss = self._test_on_values(X_train, y_train, X_test, y_test, model, num, weight, loss_function,
+                                                    threshold=threshold_weight)
                         if loss == np.inf:
                             print("No features selected, skipping")
                             break
                         print(
                             f"Weight: {weight}, Num features: {num}, Score threshold: {threshold_weight}, Loss: {loss}")
+
                         # Update the best loss, weight, number of features and threshold if the current loss is better
                         if loss < best_loss:
                             best_loss = loss
                             best_weight = weight
                             best_num_features = num
                             best_threshold = threshold_weight
+
         # Set the best weight and number of features
         self.correlation_weight = best_weight
+
         # Get the selected features
         print(f"Best weight: {best_weight}, Best loss: {best_loss}, Best num features: {best_num_features}")
         X_transformed, selected_features, feature_scores = self.transform(X_train, num_features=best_num_features)
-        return X_transformed, selected_features, feature_scores, best_weight, best_loss, best_num_features, best_threshold
+        return (X_transformed, selected_features, feature_scores, best_weight, best_loss, best_num_features,
+                best_threshold, history)

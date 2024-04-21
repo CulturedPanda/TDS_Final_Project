@@ -2,6 +2,7 @@ from .base_method import BaseMethod
 import numpy as np
 import pandas as pd
 
+
 class BacktrackingVariant(BaseMethod):
     """
     A variant of the algorithm presented in the paper "A feature selection method based on Shapley values robust to
@@ -17,7 +18,6 @@ class BacktrackingVariant(BaseMethod):
     def __init__(self, q_low=0.15, q_high=0.85):
         super().__init__(q_low, q_high)
 
-
     def _choose_features(self, neg_infs):
         # Remove features with infinite negative influence
         infinite_neg_influence_features = neg_infs[neg_infs == np.infty].index
@@ -31,7 +31,6 @@ class BacktrackingVariant(BaseMethod):
         features = feature.append(infinite_neg_influence_features)
 
         return features
-
 
     def predict(self, X_train, y_train, X_val, y_val, model, metric, n_features_to_remove=0,
                 metric_lower_is_better=True, num_iter_prev=0):
@@ -113,7 +112,8 @@ class BacktrackingVariant(BaseMethod):
                 score = metric(y_val, y_pred)
 
                 # If the score is better, update the best feature set and score
-                if (metric_lower_is_better and score < local_best_score) or (not metric_lower_is_better and score > local_best_score):
+                if (metric_lower_is_better and score < local_best_score) or (
+                        not metric_lower_is_better and score > local_best_score):
                     local_best_score = score
                     best_local_feature_set = X_train_temp.columns
 
@@ -122,14 +122,9 @@ class BacktrackingVariant(BaseMethod):
             n_features_to_remove -= current_num_features - len(features)
 
             # Update the best feature set and score, if we found a better feature set
-            if (metric_lower_is_better and local_best_score < best_score) or (not metric_lower_is_better and local_best_score > best_score):
+            if (metric_lower_is_better and local_best_score < best_score) or (
+                    not metric_lower_is_better and local_best_score > best_score):
                 best_score = local_best_score
                 best_features = best_local_feature_set
 
         return best_features, best_score
-
-
-
-
-
-

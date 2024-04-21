@@ -15,11 +15,23 @@ class Sequencer:
 
     def __init__(self, data: pd.DataFrame, targets: pd.Series, col: str, flatten: bool,
                  sequencing_method: str = 'MeanShift', as_type: np.dtype = np.float32):
+        """
+        :param data: The data to sequence
+        :param targets: The targets for the data
+        :param col: The column to sequence the data by
+        :param flatten: Whether to flatten the data or not
+        :param sequencing_method: The method to use for sequencing the data. Either 'MeanShift' or 'DBSCAN'
+        :param as_type: The data type to cast the data to
+        """
         data = data.astype(as_type)
         self.max_index = max(data.index * 10)
         targets = targets.astype(as_type)
         self.col = col
+
+        # The clustering method to use
         self.clustering_method = MeanShift if sequencing_method == 'MeanShift' else DBSCAN
+
+        # Sequence the data
         self.sequences, self.targets = self.sequence_data(data, targets)
         self.index = 0
         self.previous_index = 0
@@ -37,25 +49,33 @@ class Sequencer:
         sequences = []
         sequence_targets = []
         clustering = self.clustering_method()
+
         # Fit the clustering algorithm to the data to identify sequences in the data
         clustering_cols = pd.DataFrame(data[self.col])
         clusters = clustering.fit_predict(clustering_cols)
+
         for cluster in set(clusters):
             sequence = data[clusters == cluster]
+
             # Sort the sequence by its column values
             sequence = sequence.sort_values(by=self.col)
+
             # Get the targets for the sequence
             current_targets = targets[clusters == cluster]
+
             # Sort the targets by the sequence
             current_targets = current_targets[sequence.index]
             sequences.append(sequence)
             sequence_targets.append(current_targets)
+
         return sequences, sequence_targets
 
     def normalize(self, sequences: List[pd.DataFrame] = None):
         """
-        Normalize the data in the sequences
-        :return:
+        Normalize the data in the sequences.
+        Either normalize the data in the sequences provided as input to this method,
+        or normalize the data in the stored sequences if no input is provided.
+        :return: The normalized sequences, if sequences are provided.
         """
         if sequences is None:
             for i in range(len(self.sequences)):
@@ -73,14 +93,17 @@ class Sequencer:
 
     def pad_sequences(self, max_sequence_length: int, sequences: List[pd.DataFrame] = None):
         """
-        Pad the sequences to the same length
-        :param max_sequence_length:
-        :return:
+        Pad the sequences to the same length.
+        Either pad the sequences provided as input to this method to the same length,
+        or pad the stored sequences to the same length if no input is provided.
+        :param max_sequence_length: The maximum length of the sequences.
+        :return: The padded sequences, if sequences are provided.
         """
         if sequences is None:
             for i in range(len(self.sequences)):
                 sequence = self.sequences[i]
                 if len(sequence) < max_sequence_length:
+
                     # Pad the sequence with zeros
                     padding = pd.DataFrame(np.zeros((max_sequence_length - len(sequence), len(sequence.columns))),
                                            columns=sequence.columns,
@@ -102,6 +125,8 @@ class Sequencer:
                     for j in range(num_segments):
                         segment = sequence[j * max_sequence_length:(j + 1) * max_sequence_length]
                         segments.append(segment)
+
+                    # Pad the last segment, if necessary
                     final_segment = segments[-1]
                     padding = pd.DataFrame(np.zeros((max_sequence_length - len(final_segment), len(sequence.columns))),
                                              columns=sequence.columns,
@@ -117,14 +142,11 @@ class Sequencer:
         return self
 
     def __next__(self):
-        """
-        Returns the next sequence in the list of sequences
-        :return:
-        """
         self.previous_index = self.index
         self.index += 1
         self.index = self.index % len(self.sequences)
         current_sequence = self.sequences[self.index]
+        # If the data is to be flattened, reshape the data to a 1D array
         if self.flatten:
             return current_sequence.to_numpy().reshape(-1,)
         return current_sequence.to_numpy()
@@ -152,7 +174,7 @@ class Sequencer:
     def reset(self):
         """
         Reset the index of the sequences
-        :return:
+        :return: The first sequence
         """
         self.index = 0
         self.previous_index = 0

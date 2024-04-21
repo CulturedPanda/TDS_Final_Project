@@ -22,7 +22,7 @@ data = data[cols]
 
 # Preprocess the data to encode categorical variables, impute missing values and remove collinear features
 preprocessor = PreprocessingPipeline(data,
-                                     ['MSSubClass', 'FullBath'], 0.85)
+                                     ['MSSubClass', 'FullBath'], 0.85, target_name='SalePrice')
 X, continuous_cols, cat_cols = preprocessor.preprocess()
 
 X_train, X_test, y_train, y_test = train_test_split(X, X['SalePrice'], test_size=0.10, random_state=42)

@@ -6,15 +6,28 @@ from .sequencer import Sequencer
 
 
 class SequentialModelDatasetEnv(gym.Env):
+    """
+    An environment for the sequential agent that selects features from a dataset.
+    """
 
     def __init__(self, X_train, y_train, col, downstream_model, loss_function: callable, flatten=False):
+        """
+        :param X_train: The training data.
+        :param y_train: The training labels.
+        :param col: The column to sequence the data by.
+        :param downstream_model: Downstream model to be used for training.
+        :param loss_function: Loss function for the downstream model.
+        :param flatten: Whether to flatten the data or not.
+        """
         # Initialize the sequencer
         self.sequencer = Sequencer(X_train, y_train, col, flatten=flatten)
         self.sequencer.normalize()
         self.action_space = MultiBinary(len(X_train.columns))
+
         # Pad the sequences to the same length
         max_sequence_len = self.sequencer.get_max_sequence_length()
         self.sequencer.pad_sequences(max_sequence_len)
+
         # Define the observation space, such that it is the same length as the sequences
         if flatten:
             self.observation_space = Box(low=-np.inf, high=np.inf, shape=(max_sequence_len * len(X_train.columns),))
@@ -24,6 +37,10 @@ class SequentialModelDatasetEnv(gym.Env):
         self.loss_function = loss_function
 
     def get_sequencer(self):
+        """
+
+        :return: The sequencer used by the environment
+        """
         return self.sequencer
 
     def step(self, action):

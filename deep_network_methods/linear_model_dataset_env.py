@@ -6,9 +6,20 @@ from .batcher import Batcher
 
 
 class LinearModelDatasetEnv(gym.Env):
+    """
+    An environment for the linear agent that selects features from a dataset.
+    """
 
     def __init__(self, X_train, y_train, downstream_model, loss_function: callable,
                  batch_size: int = 64):
+        """
+        Initialize the environment.
+        :param X_train: The training data.
+        :param y_train: The training labels.
+        :param downstream_model: Downstream model to be used for training.
+        :param loss_function: Loss function for the downstream model.
+        :param batch_size: The size of the batch to use.
+        """
         self.X_train = X_train
         self.y_train = y_train
         self.action_space = MultiBinary(len(X_train.columns))

@@ -8,6 +8,13 @@ class Batcher:
     """
 
     def __init__(self, X, batch_size, dtype=None):
+        """
+        :param X: The data to be batched
+        :param batch_size: The size of the batch
+        :param dtype: The data type of the data.
+        If None, the data type is not changed.
+        If specified, the data is cast to the specified data type.
+        """
         self.X = X
         self.index = 0
         self.prev_index = 0
@@ -21,13 +28,16 @@ class Batcher:
         """
         self.prev_index = self.index
         self.index = (self.index + self.batch_size) % len(self.X)
+
         # Account for cases where the batch size does not divide the number of samples
         # In this case, we loop back to the beginning of the data and append those samples to the batch
         if self.index + self.batch_size > len(self.X):
             batch_len = len(self.X) - self.index
         else:
             batch_len = self.batch_size
+        # Get the batch of data
         batch_X = self.X[self.index:self.index + batch_len]
+
         # Append the beginning of the data to the batch if necessary
         if batch_len < self.batch_size:
             batch_X = pd.concat([batch_X, self.X[:self.batch_size - batch_len]])
@@ -41,9 +51,13 @@ class Batcher:
         return self.next_batch()
 
     def reset(self):
+        """
+        Reset the batcher to the beginning of the data.
+        :return: The first batch of data
+        """
         self.index = 0
         self.prev_index = 0
-        return self.next_batch()
+        return self.X[:self.batch_size].to_numpy().reshape(-1, )
 
     def is_done(self):
         return self.index <= self.prev_index

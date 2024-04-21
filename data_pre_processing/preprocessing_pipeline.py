@@ -5,17 +5,18 @@ from .missing_values_processor import MissingValuesProcessor
 
 class PreprocessingPipeline:
 
-    def __init__(self, df, cat_cols, threshold):
+    def __init__(self, df, cat_cols, threshold, target_name):
         self.df = df
         self.cat_cols = cat_cols
         self.threshold = threshold
+        self.target_name = target_name
 
     def preprocess(self):
         cat_processor = CategoricalFeatureProcessor(self.df, self.cat_cols)
         self.df, continuous_cols, cat_cols = cat_processor.preprocess()
         missing_processor = MissingValuesProcessor(self.df)
         self.df = missing_processor.process()
-        coll_processor = CollinearityProcessor(0.5)
+        coll_processor = CollinearityProcessor(target_name=self.target_name, threshold=self.threshold)
         coll_processor.fit(self.df)
         self.df = coll_processor.transform(self.df)
         # Remove the names of the columns that were removed by the collinearity processor

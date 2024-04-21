@@ -74,10 +74,12 @@ class BranchingVariant(BaseMethod):
             second_best_choice = tuple(second_best_choice)
             # If we have not added the subsets of features to the closed list, we add them to the open list (so long
             # as they are not empty)
-            if best_choice not in closed_list and len(best_choice) >= 1 and len(best_choice) >= (total_features - n_features_to_remove):
+            if best_choice not in closed_list and len(best_choice) >= 1 and len(best_choice) >= (
+                    total_features - n_features_to_remove):
                 closed_list.add(best_choice)
                 open_list.put(best_choice)
-            if second_best_choice not in closed_list and len(second_best_choice) >= 1 and len(second_best_choice) >= (total_features - n_features_to_remove):
+            if second_best_choice not in closed_list and len(second_best_choice) >= 1 and len(second_best_choice) >= (
+                    total_features - n_features_to_remove):
                 closed_list.add(second_best_choice)
                 open_list.put(second_best_choice)
 
@@ -95,5 +97,3 @@ class BranchingVariant(BaseMethod):
                 best_features = subset
 
         return best_features, best_score
-
-
