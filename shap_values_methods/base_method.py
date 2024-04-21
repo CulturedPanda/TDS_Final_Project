@@ -84,9 +84,9 @@ class BaseMethod:
         under_predicted_indexes = np.where(err > Q_high_star)[0]
         over_predicted_indexes = np.where(err < Q_low_star)[0]
 
-        correctly_predicted = X_val[correctly_predicted_indexes]
-        under_predicted = X_val[under_predicted_indexes]
-        over_predicted = X_val[over_predicted_indexes]
+        correctly_predicted = X_val.iloc[correctly_predicted_indexes]
+        under_predicted = X_val.iloc[under_predicted_indexes]
+        over_predicted = X_val.iloc[over_predicted_indexes]
 
         return correctly_predicted, under_predicted, over_predicted, err
 
@@ -101,8 +101,8 @@ class BaseMethod:
         :return: A series of the negative influence of each feature
         """
         neg_infs = []
+        q_2_err = np.quantile(err, 0.5)
         for i, column in enumerate(columns):
-            q_2_err = np.quantile(err, 0.5)
             if np.abs(ef_cp[i]) + np.abs(ef_up[i]) + np.abs(ef_op[i]) == 0:
                 neg_inf = np.infty
             elif q_2_err < 0 and ef_op[i] > 0 and ef_up[i] > 0 and np.abs(ef_op[i]) > (
@@ -132,11 +132,22 @@ class BaseMethod:
         """
         correctly_predicted, under_predicted, over_predicted, err = self.compute_groups(X_train, y_train, X_val, y_val,
                                                                                         model)
-        explainer = shap.Explainer(self.model)
+        explainer = shap.Explainer(self.model, X_val)
 
-        shap_values_correctly_predicted = explainer(correctly_predicted)
-        shap_values_under_predicted = explainer(under_predicted)
-        shap_values_over_predicted = explainer(over_predicted)
+        # Compute SHAP values for the correctly predicted, under-predicted, and over-predicted data points
+        # Also handle the special case where there are no data points in a group
+        if len(correctly_predicted) > 0:
+            shap_values_correctly_predicted = explainer(correctly_predicted)
+        else:
+            shap_values_correctly_predicted = pd.DataFrame(np.zeros((1, len(X_train.columns))))
+        if len(under_predicted) > 0:
+            shap_values_under_predicted = explainer(under_predicted)
+        else:
+            shap_values_under_predicted = pd.DataFrame(np.zeros((1, len(X_train.columns))))
+        if len(over_predicted) > 0:
+            shap_values_over_predicted = explainer(over_predicted)
+        else:
+            shap_values_over_predicted = pd.DataFrame(np.zeros((1, len(X_train.columns))))
 
         # Effect_(var,x) = sgn(SHAP_var(x, y, y_hat)) · SHAP_var(x, y, y_hat)^2
         effect_correctly_predicted = np.sign(
@@ -195,7 +206,10 @@ class BaseMethod:
         while len(features) > 0 and n_features_to_remove > 0:
             current_num_features = len(features)
             # Get the features to keep
-            features = self.main_phase(X_train[features], y_train, X_val[features], y_val, model)
+            features = self.main_phase(X_train, y_train, X_val, y_val, model)
+            # If we have no more features, break and return the best features
+            if len(features) == 0:
+                break
             # Keep only the features specified
             X_train = X_train[features]
             X_val = X_val[features]
@@ -212,3 +226,42 @@ class BaseMethod:
             n_features_to_remove -= current_num_features - len(features)
         # Return the best subset of features and the best score
         return best_features, best_score
+
+    def auto_optimize(self, X_train, y_train, X_val, y_val, model, metric, n_features_to_remove=0,
+                metric_lower_is_better=True, q_low_values=None, q_high_values=None, min_gap=0.01):
+        """
+        Find the best q_low and q_high values for the method via grid search.
+        :param X_train:
+        :param y_train:
+        :param X_val:
+        :param y_val:
+        :param model:
+        :param metric:
+        :param n_features_to_remove:
+        :param metric_lower_is_better:
+        :param q_high_values:
+        :param q_low_values:
+        :param min_gap:
+        :return:
+        """
+        best_q_low = 0
+        best_q_high = 0
+        best_score = np.infty
+        best_features = X_train.columns
+        q_low_values = np.linspace(0, 0.99, 21)
+        for i, q_low in enumerate(q_low_values):
+            self.set_q_low(q_low)
+            num_q_high_values = 21 - i
+            q_high_values = np.linspace(q_low + min_gap, 1, num_q_high_values)
+            for q_high in q_high_values:
+                self.set_q_high(q_high)
+                features, score = self.predict(X_train, y_train, X_val, y_val, model, metric, n_features_to_remove,
+                                                metric_lower_is_better)
+                print(f"q_low: {q_low}, q_high: {q_high}, score: {score}, num_features: {len(features)}")
+                if (metric_lower_is_better and score < best_score) or (not metric_lower_is_better and score > best_score):
+                    best_score = score
+                    best_features = features
+                    best_q_low = q_low
+                    best_q_high = q_high
+        return best_q_low, best_q_high, best_features, best_score
+
