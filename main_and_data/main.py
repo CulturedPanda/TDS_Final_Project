@@ -1,13 +1,11 @@
-import numpy as np
 import pandas as pd
 import os
 
-from shap_values_methods import BaseMethod
+from shap_values_methods import BranchingVariant
 from data_pre_processing import PreprocessingPipeline
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_squared_error, r2_score, mean_absolute_error, mean_absolute_percentage_error
 from sklearn.linear_model import LinearRegression
-from stable_baselines3.common.env_checker import check_env
 
 # Get the directory of the currently running script
 script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -33,11 +31,10 @@ X_train = X_train.drop(columns=['SalePrice'])
 X_prod = X_prod.drop(columns=['SalePrice'])
 X_test = X_test.drop(columns=['SalePrice'])
 
-model = BaseMethod(q_low=0.15, q_high=0.85)
-# selected_features, best_score = model.predict(X_train, y_train, X_prod, y_prod, LinearRegression(), mean_squared_error)
-# print(selected_features)
-best_q_low, best_q_high, selected_features, best_score = model.auto_optimize(X_train, y_train, X_prod, y_prod, LinearRegression(), mean_squared_error)
-print(f"Best q_low: {best_q_low}, best q_high: {best_q_high}, selected features: {selected_features}, best score: {best_score}")
+model = BranchingVariant(q_low=0.15, q_high=0.85)
+selected_features, best_score = model.predict(X_train, y_train, X_prod, y_prod, LinearRegression(), mean_squared_error,
+                                              num_iter_prev=1)
+print(f"Num features: {len(selected_features)}, selected features: {selected_features}, best score: {best_score}")
 
 model = LinearRegression()
 model.fit(X_train[selected_features], y_train)
