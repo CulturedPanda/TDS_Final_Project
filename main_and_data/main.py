@@ -1,7 +1,7 @@
 import pandas as pd
 import os
 
-from shap_values_methods import BranchingVariant
+from shap_values_methods import BranchingVariant, BaseMethod, BacktrackingVariant
 from data_pre_processing import PreprocessingPipeline
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_squared_error, r2_score, mean_absolute_error, mean_absolute_percentage_error
@@ -31,7 +31,7 @@ X_train = X_train.drop(columns=['SalePrice'])
 X_prod = X_prod.drop(columns=['SalePrice'])
 X_test = X_test.drop(columns=['SalePrice'])
 
-model = BranchingVariant(q_low=0.15, q_high=0.85)
+model = BacktrackingVariant(q_low=0.15, q_high=0.85)
 selected_features, best_score = model.predict(X_train, y_train, X_prod, y_prod, LinearRegression(), mean_squared_error,
                                               num_iter_prev=1)
 print(f"Num features: {len(selected_features)}, selected features: {selected_features}, best score: {best_score}")
