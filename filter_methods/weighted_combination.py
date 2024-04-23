@@ -64,8 +64,14 @@ class WeightedCombination:
             data_categorical = data[categorical_cols]
 
             # Compute the mutual information for both types of features
-            cont_mi = dict(zip(continuous_cols, mutual_info_regression(data_continuous, y)))
-            cat_mi = dict(zip(categorical_cols, mutual_info_classif(data_categorical, y, discrete_features=True)))
+            if len(continuous_cols) > 0:
+                cont_mi = dict(zip(continuous_cols, mutual_info_regression(data_continuous, y)))
+            else:
+                cont_mi = {}
+            if len(categorical_cols) > 0:
+                cat_mi = dict(zip(categorical_cols, mutual_info_classif(data_categorical, y, discrete_features=True)))
+            else:
+                cat_mi = {}
             self.mutual_information = pd.Series({**cont_mi, **cat_mi})
 
         # Otherwise, we calculate the information gain as if all features are continuous
@@ -191,8 +197,10 @@ class WeightedCombination:
                     loss = self._test_on_values(X_train, y_train, X_test, y_test, model, num, weight, loss_function)
                     print(f"Weight: {weight}, Num features: {num}, Loss: {loss}")
 
-                    # Update the best loss, weight and number of features if the current loss is better
-                    if loss < best_loss:
+                    # Update the best loss, weight and number of features if the current loss is better than the best
+                    # loss or if the current loss is equal to the best loss and the current number of features is less
+                    # than the best number of features
+                    if (loss < best_loss) or (loss == best_loss and num < best_num_features):
                         best_loss = loss
                         best_weight = weight
                         best_num_features = num
@@ -211,7 +219,7 @@ class WeightedCombination:
                             f"Weight: {weight}, Num features: {num}, Score threshold: {threshold_weight}, Loss: {loss}")
 
                         # Update the best loss, weight, number of features and threshold if the current loss is better
-                        if loss < best_loss:
+                        if (loss < best_loss) or (loss == best_loss and num < best_num_features):
                             best_loss = loss
                             best_weight = weight
                             best_num_features = num

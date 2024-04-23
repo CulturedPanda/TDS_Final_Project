@@ -19,7 +19,11 @@ class CategoricalFeatureProcessor:
         :return: the dataset with one-hot encoded categorical features,
          the names of the continuous columns and the names of the categorical columns
         """
-        continue_cols = [col for col in self.df.columns if col not in self.cat_cols]
-        self.df = pd.get_dummies(self.df, columns=self.cat_cols, drop_first=True)
-        cat_cols = [col for col in self.df.columns if col not in continue_cols]
-        return self.df, continue_cols, cat_cols
+        if self.cat_cols is not None:
+            continue_cols = [col for col in self.df.columns if col not in self.cat_cols]
+            self.df = pd.get_dummies(self.df, columns=self.cat_cols, drop_first=True)
+            cat_cols = [col for col in self.df.columns if col not in continue_cols]
+            return self.df, continue_cols, cat_cols
+        else:
+            continue_cols = self.df.columns
+            return self.df, continue_cols, None

@@ -3,6 +3,7 @@ from typing import List
 import numpy as np
 import pandas as pd
 from sklearn.cluster import MeanShift, DBSCAN
+from .util_funcs import is_boolean_column
 
 
 class Sequencer:
@@ -14,13 +15,13 @@ class Sequencer:
     """
 
     def __init__(self, data: pd.DataFrame, targets: pd.Series, col: str, flatten: bool,
-                 sequencing_method: str = 'MeanShift', as_type: np.dtype = np.float32):
+                 clustering_method: str = 'MeanShift', as_type: np.dtype = np.float32):
         """
         :param data: The data to sequence
         :param targets: The targets for the data
         :param col: The column to sequence the data by
         :param flatten: Whether to flatten the data or not
-        :param sequencing_method: The method to use for sequencing the data. Either 'MeanShift' or 'DBSCAN'
+        :param clustering_method: The method to use for sequencing the data. Either 'MeanShift' or 'DBSCAN'
         :param as_type: The data type to cast the data to
         """
         data = data.astype(as_type)
@@ -29,7 +30,7 @@ class Sequencer:
         self.col = col
 
         # The clustering method to use
-        self.clustering_method = MeanShift if sequencing_method == 'MeanShift' else DBSCAN
+        self.clustering_method = MeanShift if clustering_method == 'MeanShift' else DBSCAN
 
         # Sequence the data
         self.sequences, self.targets = self.sequence_data(data, targets)
@@ -82,12 +83,18 @@ class Sequencer:
                 std = self.sequences[i].std()
                 # Locate zeroes in the standard deviation and replace them with 1, to avoid division by zero
                 std[std == 0] = 1
-                self.sequences[i] = (self.sequences[i] - self.sequences[i].mean()) / std
+                # Avoid normalizing boolean columns
+                for col in self.sequences[i].columns:
+                    if not is_boolean_column(self.sequences[i][col]):
+                        self.sequences[i][col] = (self.sequences[i][col] - self.sequences[i][col].mean()) / std[col]
         else:
             for i in range(len(sequences)):
                 std = sequences[i].std()
                 std[std == 0] = 1
-                sequences[i] = (sequences[i] - sequences[i].mean()) / std
+                # Avoid normalizing boolean columns
+                for col in sequences[i].columns:
+                    if not is_boolean_column(sequences[i][col]):
+                        sequences[i][col] = (sequences[i][col] - sequences[i][col].mean()) / std[col]
             return sequences
 
 

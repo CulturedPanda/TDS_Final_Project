@@ -20,6 +20,7 @@ class PreprocessingPipeline:
         coll_processor.fit(self.df)
         self.df = coll_processor.transform(self.df)
         # Remove the names of the columns that were removed by the collinearity processor
-        continuous_cols = [col for col in continuous_cols if col in self.df.columns]
-        cat_cols = [col for col in cat_cols if col in self.df.columns]
+        continuous_cols = [col for col in continuous_cols if (col in self.df.columns and col != self.target_name)]
+        if cat_cols is not None:
+            cat_cols = [col for col in cat_cols if col in self.df.columns]
         return self.df, continuous_cols, cat_cols

@@ -8,6 +8,8 @@ from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
 from gymnasium import Env
 from stable_baselines3.common.callbacks import EvalCallback
 
+from .util_funcs import is_boolean_column
+
 
 class LinearAgent():
     """
@@ -89,7 +91,10 @@ class LinearAgent():
         """
         X_train = X_train.astype(np.dtype('float32'))
         y_train = y_train.astype(np.dtype('float32'))
-        X_train = (X_train - X_train.mean()) / X_train.std()
+        # Normalize the data, while avoiding boolean columns
+        for column in X_train.columns:
+            if not is_boolean_column(X_train[column]):
+                X_train[column] = (X_train[column] - X_train[column].mean()) / X_train[column].std()
         return X_train, y_train
 
     def preprocess_input_data(self, X):
@@ -98,8 +103,12 @@ class LinearAgent():
         :return: The preprocessed data
         """
         X = X.astype(np.dtype('float32'))
-        X = (X - X.mean()) / X.std()
-        return X
+        # Normalize the data, while avoiding boolean columns
+        for column in X.columns:
+            if not is_boolean_column(X[column]):
+                X[column] = (X[column] - X[column].mean()) / X[column].std()
+        X = X.to_numpy()
+        return X.reshape(-1, )
 
 
     def learn(self, num_steps: int = 4000):

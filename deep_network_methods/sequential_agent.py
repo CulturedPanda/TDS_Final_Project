@@ -23,7 +23,7 @@ class SequentialAgent:
                  network_architecture_class: BaseFeaturesExtractor | str = None,
                  environment: SequentialModelDatasetEnv = None, network_kwargs: dict = None,
                  save_path: str = None, eval_freq: int = 250, lstm_hidden_layer_size: int = 128,
-                 lstm_num_layers: int = 3):
+                 lstm_num_layers: int = 3, clustering_method='MeanShift'):
         """
         Initialize the agent.
         :param X_train: The training data.
@@ -58,7 +58,8 @@ class SequentialAgent:
                                                          col=col,
                                                          downstream_model=downstream_model,
                                                          loss_function=loss_function,
-                                                         flatten=self.flatten)
+                                                         flatten=self.flatten,
+                                                         clustering_method=clustering_method)
         else:
             self.environment = environment
         self.agent_type = agent_type
@@ -140,6 +141,8 @@ class SequentialAgent:
 
         # Cast to float32, just in case
         sequences = [sequence.astype(np.float32) for sequence in sequences]
+        for i in range(len(sequences)):
+            sequences[i] = sequences[i] if isinstance(sequences[i], np.ndarray) else sequences[i].to_numpy()
         predictions = []
 
         # Predict the best features to select for each sequence

@@ -10,7 +10,8 @@ class SequentialModelDatasetEnv(gym.Env):
     An environment for the sequential agent that selects features from a dataset.
     """
 
-    def __init__(self, X_train, y_train, col, downstream_model, loss_function: callable, flatten=False):
+    def __init__(self, X_train, y_train, col, downstream_model, loss_function: callable, flatten=False,
+                 clustering_method='MeanShift'):
         """
         :param X_train: The training data.
         :param y_train: The training labels.
@@ -20,7 +21,7 @@ class SequentialModelDatasetEnv(gym.Env):
         :param flatten: Whether to flatten the data or not.
         """
         # Initialize the sequencer
-        self.sequencer = Sequencer(X_train, y_train, col, flatten=flatten)
+        self.sequencer = Sequencer(X_train, y_train, col, flatten=flatten, clustering_method=clustering_method)
         self.sequencer.normalize()
         self.action_space = MultiBinary(len(X_train.columns))
 
