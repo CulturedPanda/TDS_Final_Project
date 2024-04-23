@@ -42,16 +42,16 @@ X_transformed, selected_features, feature_scores, best_weight, best_loss, best_n
 # X_transformed, selected_features, _ = filter_method.transform(X_train, num_features=13)
 print(selected_features)
 
-# Plot a graph of the loss over the weight and number of features
-weight_history = history['weight']
-num_features_history = history['num_features']
-loss_history = history['loss']
-plt.scatter(weight_history, num_features_history, c=loss_history, cmap='viridis')
-plt.colorbar()
+# History - columns are the weights, rows are the number of features, values are the loss
+# Plot the history
+weights, num_features = np.meshgrid(history.columns, history.index)
+plt.scatter(weights, num_features, c=history.values, cmap='viridis')
 plt.xlabel('Weight')
 plt.ylabel('Number of features')
-plt.title('Loss over weight and number of features')
+plt.title('Loss vs. Weight and Number of Features')
+plt.colorbar()
 plt.show()
+
 
 X_train = X_train.drop(columns=['SalePrice'])
 X_test = X_test.drop(columns=['SalePrice'])

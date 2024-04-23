@@ -162,7 +162,9 @@ class WeightedCombination:
         min_threshold parameter. Default is False. Note that this will significantly increase the time taken,
         as it will perform a 3d grid search instead of a 2d grid search.
         :return: a dataframe with the selected features, the list of selected features and the feature scores,
-        the best weight, the best loss, the best number of features and the best threshold found
+        the best weight, the best loss, the best number of features, the best threshold found,
+        and a dataframe with the optimization history, where the columns are the weights, the rows are the number of features,
+        and the values are the losses.
         """
 
         # Initialize the best loss and weight
@@ -170,16 +172,16 @@ class WeightedCombination:
         best_weight = None
         best_num_features = None
         best_threshold = 0
-        history = {
-            "weight": [],
-            "num_features": [],
-            "loss": []
-        }
+
 
         # Initialize the grid search parameters
         correlation_weights = np.linspace(0, 1, 101)
         num_features = np.arange(1, len(X_train.columns) + 1)
         threshold_weights = np.linspace(0, 1, 101)
+
+        # Initialize the optimization history - a dataframe where columns are the weight, row is the number of features,
+        # and the value is the loss
+        history = pd.DataFrame(columns=correlation_weights, index=num_features)
 
         # Iterate over the grid search parameters.
         # If include_threshold_optimization is False, we will skip the threshold optimization
@@ -194,9 +196,7 @@ class WeightedCombination:
                         best_loss = loss
                         best_weight = weight
                         best_num_features = num
-                    history["weight"].append(weight)
-                    history["num_features"].append(num)
-                    history["loss"].append(loss)
+                    history.loc[num, weight] = loss
         # If include_threshold_optimization is True, we will include the threshold optimization
         else:
             for weight in correlation_weights:
@@ -223,5 +223,6 @@ class WeightedCombination:
         # Get the selected features
         print(f"Best weight: {best_weight}, Best loss: {best_loss}, Best num features: {best_num_features}")
         X_transformed, selected_features, feature_scores = self.transform(X_train, num_features=best_num_features)
+        history = history.astype(float)
         return (X_transformed, selected_features, feature_scores, best_weight, best_loss, best_num_features,
                 best_threshold, history)
