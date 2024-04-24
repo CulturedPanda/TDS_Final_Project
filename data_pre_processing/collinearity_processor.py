@@ -1,3 +1,6 @@
+import pandas as pd
+
+
 class CollinearityProcessor:
     """
     A processor that removes collinear features from a dataset.
@@ -56,7 +59,16 @@ class CollinearityProcessor:
         """
         feature_i = self.correlation_matrix.columns[i]
         feature_j = self.correlation_matrix.columns[j]
-        if (abs(self.correlation_matrix.loc[feature_i, self.target_name])
-                > abs(self.correlation_matrix.loc[feature_j, self.target_name])):
+
+        cor_target_i = abs(self.correlation_matrix.loc[feature_i, self.target_name])
+
+        # If the loc function returns a series, take the first element
+        if isinstance(cor_target_i, pd.Series):
+            cor_target_i = cor_target_i[0]
+
+        cor_target_j = abs(self.correlation_matrix.loc[feature_j, self.target_name])
+        if isinstance(cor_target_j, pd.Series):
+            cor_target_j = cor_target_j[0]
+        if cor_target_i > cor_target_j:
             return feature_j
         return feature_i

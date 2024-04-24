@@ -9,29 +9,21 @@ from sklearn.metrics import mean_squared_error, r2_score, mean_absolute_error, m
 from sklearn.linear_model import LinearRegression
 import matplotlib.pyplot as plt
 
-# Get the directory of the currently running script
-script_dir = os.path.dirname(os.path.abspath(__file__))
-
-# Construct the absolute path to the data file
-data_file_path = os.path.join(script_dir, 'data', 'data_houses.csv')
-
 # Read the data file
-data = pd.read_csv(data_file_path, index_col="Id")
-target = 'SalePrice'
-cols = ["OverallQual","GrLivArea","GarageCars","GarageArea","TotalBsmtSF","FullBath","YearBuilt","YearRemodAdd",
-        "LotFrontage","MSSubClass", "SalePrice"]
-data = data[cols]
+data = pd.read_csv('data/insurance.csv')
+target = 'charges'
+print(f"Num rows: {data.shape[0]}, num cols: {data.shape[1]}")
 
 # Preprocess the data to encode categorical variables, impute missing values and remove collinear features
-preprocessor = PreprocessingPipeline(data,
-                                     ['MSSubClass', 'FullBath'], 0.85, target_name='SalePrice')
+preprocessor = PreprocessingPipeline(data, ['sex', 'smoker', 'region'], 0.9, target_name='SalePrice')
 X, continuous_cols, cat_cols = preprocessor.preprocess()
 
-X_train, X_test, y_train, y_test = train_test_split(X, X['SalePrice'], test_size=0.10, random_state=42)
+X_train, X_test, y_train, y_test = train_test_split(X, X[target], test_size=0.10, random_state=42)
 X_train, X_prod, y_train, y_prod = train_test_split(X_train, y_train, test_size=0.2, random_state=42)
 
 filter_method = WeightedCombination()
-filter_method.fit(X_train, target_column="SalePrice", continuous_cols=continuous_cols, categorical_cols=cat_cols)
+print(filter_method.__name__)
+filter_method.fit(X_train, target_column=target, continuous_cols=continuous_cols, categorical_cols=cat_cols)
 X_transformed, selected_features, feature_scores, best_weight, best_loss, best_num_features, best_threshold, history \
     = filter_method.auto_optimize(X_train,
                                   y_train, X_prod,
@@ -53,8 +45,8 @@ plt.colorbar()
 plt.show()
 
 
-X_train = X_train.drop(columns=['SalePrice'])
-X_test = X_test.drop(columns=['SalePrice'])
+X_train = X_train.drop(columns=[target])
+X_test = X_test.drop(columns=[target])
 model = LinearRegression()
 model.fit(X_transformed, y_train)
 y_pred = model.predict(X_test[selected_features])

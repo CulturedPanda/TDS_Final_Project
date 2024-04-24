@@ -15,6 +15,8 @@ class BacktrackingVariant(BaseMethod):
     removed might be beneficial when added back in a different context.
     """
 
+    __name__ = "ShapValuesBacktrackingVariant"
+
     def __init__(self, q_low=0.15, q_high=0.85):
         super().__init__(q_low, q_high)
 

@@ -14,6 +14,8 @@ class BranchingVariant(BaseMethod):
     This allows the algorithm to explore more possibilities and potentially find better subsets of features.
     """
 
+    __name__ = "ShapValuesBranchingVariant"
+
     def __init__(self, q_low=0.15, q_high=0.85):
         super().__init__(q_low, q_high)
 

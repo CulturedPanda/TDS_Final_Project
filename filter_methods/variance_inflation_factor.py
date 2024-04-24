@@ -14,6 +14,8 @@ class VarianceInflationFactor:
     performance.
     """
 
+    __name__ = "VIF"
+
     def __init__(self):
         self.vif = None
 

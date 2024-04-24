@@ -9,6 +9,8 @@ class BaseMethod:
     concept shift in regression" by Carlos Sebastián and Carlos E. González-Guillén, arXiv preprint arXiv:2304.14774 (2023).
     """
 
+    __name__ = "ShapValuesBaseMethod"
+
     def __init__(self, q_low=0, q_high=1):
         """
         :param q_low: the lower quantile of the error distribution

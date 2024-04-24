@@ -18,6 +18,8 @@ class LinearAgent():
     and does not split the data into sequences.
     """
 
+    __name__ = "LinearAgent"
+
     def __init__(self, X_train, y_train, downstream_model, loss_function: callable,
                  batch_size: int = 64, agent_type: str = 'A2C',
                  network_architecture_class: BaseFeaturesExtractor | str = None,

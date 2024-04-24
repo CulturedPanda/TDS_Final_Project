@@ -18,6 +18,8 @@ class SequentialAgent:
     Can use either a fully connected network or a recurrent network.
     """
 
+    __name__ = "SequentialAgent"
+
     def __init__(self, X_train, y_train, col: str, downstream_model, loss_function: callable,
                  agent_type: str = 'A2C', network_type='recurrent',
                  network_architecture_class: BaseFeaturesExtractor | str = None,

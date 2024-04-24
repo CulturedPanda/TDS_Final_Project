@@ -13,6 +13,8 @@ class WeightedCombination:
     features to select.
     """
 
+    __name__ = "WeightedCombination"
+
     def __init__(self, correlation_weight=0.5, target_column=None):
         self.mutual_information = None
         self.correlation = None
@@ -69,7 +71,8 @@ class WeightedCombination:
             else:
                 cont_mi = {}
             if len(categorical_cols) > 0:
-                cat_mi = dict(zip(categorical_cols, mutual_info_classif(data_categorical, y, discrete_features=True)))
+                # We set y to int, as the mutual_info_classif function requires the target to be an integer
+                cat_mi = dict(zip(categorical_cols, mutual_info_classif(data_categorical, y.astype(int), discrete_features=True)))
             else:
                 cat_mi = {}
             self.mutual_information = pd.Series({**cont_mi, **cat_mi})
