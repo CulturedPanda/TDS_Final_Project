@@ -66,6 +66,18 @@ class Sequencer:
 
             # Sort the targets by the sequence
             current_targets = current_targets[sequence.index]
+
+            # Edge case - targets only contain one value. In this case, add dummy data and a dummy target
+            if len(pd.unique(current_targets)) == 1:
+                dummy_data = pd.DataFrame(np.zeros((1, len(sequence.columns))), columns=sequence.columns,
+                                          index=range(self.max_index, self.max_index + 1))
+                unique_target = pd.unique(current_targets)[0]
+
+                # Add a dummy target that is the opposite of the unique target
+                dummy_target = pd.Series([(unique_target + 1) % 2], index=[self.max_index])
+                sequence = pd.concat([sequence, dummy_data])
+                current_targets = pd.concat([current_targets, dummy_target])
+
             sequences.append(sequence)
             sequence_targets.append(current_targets)
 
@@ -216,6 +228,17 @@ class Sequencer:
                 sequence = data[(data[self.col] <= self.ranges[i][1]) & (data[self.col] > self.ranges[i - 1][1])]
             if targets is not None:
                 sequence_targets = targets[sequence.index]
+
+                # Edge case - targets only contain one value. In this case, add dummy data and a dummy target
+                if len(pd.unique(sequence_targets)) == 1:
+                    dummy_data = pd.DataFrame(np.zeros((1, len(sequence.columns))), columns=sequence.columns,
+                                              index=range(self.max_index, self.max_index + 1))
+                    unique_target = pd.unique(sequence_targets)[0]
+
+                    # Add a dummy target that is the opposite of the unique target
+                    dummy_target = pd.Series([(unique_target + 1) % 2], index=[self.max_index])
+                    sequence = pd.concat([sequence, dummy_data])
+                    sequence_targets = pd.concat([sequence_targets, dummy_target])
             else:
                 sequence_targets = None
             sequences.append(sequence)

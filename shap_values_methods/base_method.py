@@ -327,7 +327,7 @@ class BaseMethod:
         return best_features, best_score
 
     def auto_optimize(self, X_train, y_train, X_val, y_val, model, metric, n_features_to_remove=0,
-                      metric_lower_is_better=True, num_q_low_values=21, min_gap=0.01):
+                      metric_lower_is_better=True, num_q_low_values=21, min_gap=0.01, num_iter_prev=0):
         """
         Find the best q_low and q_high values for the method via grid search.
         :param X_train: The training data.
@@ -342,6 +342,9 @@ class BaseMethod:
         metric to the best score. If True, the comparison operator is '<', otherwise it is '>'.
         :param num_q_low_values: The number of q_low values to be tested. Will be spread evenly between 0 and 1.
         :param min_gap: The minimum gap between q_low and q_high. Must be greater than 0.
+        :param num_iter_prev: The number of iterations to be used in the preliminary phase. If set to 0, the method will
+        only use the main phase. Set to 1 for models without a random component, like linear regression, and to a higher
+        number for models with a random component like neural networks.
         :return: The best q_low and q_high values found, as well as the best subset of features and the best score.
         Please note that the best q_low and q_high values are not guaranteed to be the best for the model, as it is
         impossible to test all possible values. However, they should be close to the best values.
@@ -361,7 +364,7 @@ class BaseMethod:
             for q_high in q_high_values:
                 self.set_q_high(q_high)
                 features, score = self.predict(X_train, y_train, X_val, y_val, model, metric, n_features_to_remove,
-                                               metric_lower_is_better)
+                                               metric_lower_is_better, num_iter_prev=num_iter_prev)
                 print(f"q_low: {q_low}, q_high: {q_high}, score: {score}, num_features: {len(features)}")
                 if (metric_lower_is_better and score < best_score) or (
                         not metric_lower_is_better and score > best_score):
