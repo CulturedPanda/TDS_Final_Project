@@ -11,13 +11,14 @@ from sklearn.metrics import accuracy_score, log_loss, recall_score, precision_sc
 from sklearn.linear_model import LogisticRegression
 from sklearn.preprocessing import StandardScaler
 
-data = pd.read_csv("data/breast-cancer_logistic.csv", index_col="id")
-data['diagnosis'] = data['diagnosis'].map({'M': 1, 'B': 0})
+data = pd.read_csv("data/Life Expectancy Data.csv")
+data = data.drop(columns=['Country'])
+# data['diagnosis'] = data['diagnosis'].map({'M': 1, 'B': 0})
 num_rows = data.shape[0]
 num_cols = data.shape[1]
 print(f"Number of rows: {num_rows}, number of columns: {num_cols}")
 
-target = 'diagnosis'
+target = 'Life expectancy '
 
 # target = 'diagnosis'
 # data.drop(columns=['id'], inplace=True)
@@ -26,7 +27,7 @@ target = 'diagnosis'
 # data = data[cols]
 
 # Preprocess the data to encode categorical variables, impute missing values and remove collinear features
-preprocessor = PreprocessingPipeline(data, cat_cols=None,
+preprocessor = PreprocessingPipeline(data, cat_cols=['Status'],
                                      threshold=0.9, target_name=target)
 X, continuous_cols, cat_cols = preprocessor.preprocess()
 scaler = StandardScaler()
