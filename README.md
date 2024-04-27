@@ -1,8 +1,7 @@
 # Taular Data Science project - Tools for automating and improving feature selection
-This project is my submission for the final project of the course "Tabular Data Science", Bar-Ilan University winter 
+This project is my project for the "Tabular Data Science" science, Bar-Ilan University, winter 
 semester 2024.\
-This project is about implementing a suite of algorithms for automated feature selection from tabular data. The algorithms
-are implemented in Python, and are based on existing algorithms and papers.
+This project is about implementing a suite of algorithms for automated feature selection from tabular data, meant to pick subsets of features that are as close to optimal as possible in a reasonable frame of time. The algorithms are implemented in Python, and are based on existing algorithms and papers.
 
 In this repository, aside from the code and implementations of the various algorithms,
 you can find the following:
