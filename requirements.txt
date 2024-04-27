@@ -1,8 +1,5 @@
-numpy~=1.26.4
-pandas~=2.2.2
-scikit-learn~=1.4.2
-statsmodels~=0.14.2
-shap~=0.45.0
+# This requirements.txt file only includes the packages not used in class, as per the instructions.
+# Refer to requirements_full.txt for the full list of packages used in the project.
 stable_baselines3~=2.3.0
 gymnasium~=0.29.1
 sb3_contrib~=2.3.0

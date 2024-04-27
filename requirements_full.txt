@@ -1,0 +1,14 @@
+# All of the packages used in this project, including the ones used in class. This file simply exists
+# so I can put this on my github and not forget what packages I used in this project.
+# Please ignore this file if you are the one grading this project, and refer to the requirements.txt file instead.
+
+numpy~=1.26.4
+pandas~=2.2.2
+scikit-learn~=1.4.2
+statsmodels~=0.14.2
+shap~=0.45.0
+stable_baselines3~=2.3.0
+gymnasium~=0.29.1
+sb3_contrib~=2.3.0
+torch~=2.2.2
+seaborn~=0.13.2
